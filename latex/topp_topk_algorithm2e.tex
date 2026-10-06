@@ -1,0 +1,54 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+% Русские ключевые слова
+\SetAlgorithmName{Алгоритм}{алгоритм}{Список алгоритмов}
+\SetKwInOut{Input}{Вход}
+\SetKwInOut{Output}{Выход}
+\SetKwIF{If}{ElseIf}{Else}{если}{то}{иначе если}{иначе}{конец если}
+\SetKwFor{ForEach}{для каждого}{выполнить}{конец цикла}
+\SetKw{Return}{вернуть}
+\SetKw{Break}{прервать цикл}
+\SetCommentSty{textit}
+\DontPrintSemicolon
+
+\begin{document}
+
+\begin{algorithm}[H]
+\caption{Top-k фильтрация}\label{alg:topk}
+\Input{распределение $P=\{(w_i,p_i)\}_{i=1}^{V}$, число слов $k$}
+\Output{распределение $P'$ на $k$ самых вероятных словах}
+$R \gets$ слова из $P$ по убыванию $p_i$ \tcp*{$O(V\log V)$}
+$K \gets R[1..k]$ \tcp*{первые $k$ слов}
+$S \gets \sum_{(w,p)\in K} p$\;
+\ForEach{$(w,p)\in K$}{
+    $P'(w) \gets p / S$ \tcp*{пересчёт: сумма равна 1}
+}
+\Return{$P'$}\;
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Top-p (nucleus) фильтрация}\label{alg:topp}
+\Input{распределение $P=\{(w_i,p_i)\}_{i=1}^{V}$, порог $p_{\text{top}}\in(0,1]$}
+\Output{распределение $P'$ на минимальном наборе слов с суммой $\ge p_{\text{top}}$}
+$R \gets$ слова из $P$ по убыванию $p_i$ \tcp*{$O(V\log V)$}
+$K \gets \varnothing$;\ $c \gets 0$\;
+\ForEach{$(w,p)\in R$}{
+    $K \gets K \cup \{(w,p)\}$\;
+    $c \gets c + p$ \tcp*{накопленная вероятность}
+    \If{$c \ge p_{\text{top}}$}{
+        \Break\;
+    }
+}
+$S \gets \sum_{(w,p)\in K} p$\;
+\ForEach{$(w,p)\in K$}{
+    $P'(w) \gets p / S$\;
+}
+\Return{$P'$}\;
+\end{algorithm}
+
+\end{document}

@@ -1,0 +1,60 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}        % плавающее окружение algorithm, подпись, нумерация
+\usepackage{algpseudocode}    % раскладка из пакета algorithmicx
+
+% Русские ключевые слова
+\algrenewcommand\algorithmicrequire{\textbf{Вход:}}
+\algrenewcommand\algorithmicensure{\textbf{Выход:}}
+\algrenewcommand\algorithmicforall{\textbf{для каждого}}
+\algrenewcommand\algorithmicdo{\textbf{выполнить}}
+\algrenewcommand\algorithmicif{\textbf{если}}
+\algrenewcommand\algorithmicthen{\textbf{то}}
+\algrenewcommand\algorithmicreturn{\textbf{вернуть}}
+\algrenewtext{EndFor}{\textbf{конец цикла}}
+\algrenewtext{EndIf}{\textbf{конец если}}
+\floatname{algorithm}{Алгоритм}
+
+\begin{document}
+
+\begin{algorithm}
+\caption{Top-k фильтрация}\label{alg:topk}
+\begin{algorithmic}[1]
+\Require распределение $P=\{(w_i,p_i)\}_{i=1}^{V}$, число слов $k$
+\Ensure распределение $P'$ на $k$ самых вероятных словах
+\State $R \gets$ слова из $P$ по убыванию $p_i$ \Comment{$O(V\log V)$}
+\State $K \gets R[1..k]$ \Comment{первые $k$ слов}
+\State $S \gets \sum_{(w,p)\in K} p$
+\ForAll{$(w,p)\in K$}
+    \State $P'(w) \gets p / S$ \Comment{пересчёт: сумма равна 1}
+\EndFor
+\State \Return $P'$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Top-p (nucleus) фильтрация}\label{alg:topp}
+\begin{algorithmic}[1]
+\Require распределение $P=\{(w_i,p_i)\}_{i=1}^{V}$, порог $p_{\text{top}}\in(0,1]$
+\Ensure распределение $P'$ на минимальном наборе слов с суммой $\ge p_{\text{top}}$
+\State $R \gets$ слова из $P$ по убыванию $p_i$ \Comment{$O(V\log V)$}
+\State $K \gets \varnothing$;\quad $c \gets 0$
+\ForAll{$(w,p)\in R$}
+    \State $K \gets K \cup \{(w,p)\}$
+    \State $c \gets c + p$ \Comment{накопленная вероятность}
+    \If{$c \ge p_{\text{top}}$}
+        \State \textbf{прервать цикл}
+    \EndIf
+\EndFor
+\State $S \gets \sum_{(w,p)\in K} p$
+\ForAll{$(w,p)\in K$}
+    \State $P'(w) \gets p / S$
+\EndFor
+\State \Return $P'$
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
