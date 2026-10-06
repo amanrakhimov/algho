@@ -1,0 +1,111 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Русские ключевые слова
+\algrenewcommand\algorithmicrequire{\textbf{Вход:}}
+\algrenewcommand\algorithmicensure{\textbf{Выход:}}
+\algrenewcommand\algorithmicforall{\textbf{для каждого}}
+\algrenewcommand\algorithmicdo{\textbf{выполнить}}
+\algrenewcommand\algorithmicif{\textbf{если}}
+\algrenewcommand\algorithmicthen{\textbf{то}}
+\algrenewcommand\algorithmicreturn{\textbf{вернуть}}
+\algrenewtext{EndFor}{\textbf{конец цикла}}
+\algrenewtext{EndIf}{\textbf{конец если}}
+\algrenewtext{For}[1]{\textbf{для} #1 \textbf{выполнить}}
+\algrenewtext{Function}[2]{\textbf{функция} \textsc{#1}(#2)}
+\algrenewtext{EndFunction}{\textbf{конец функции}}
+\floatname{algorithm}{Алгоритм}
+
+\begin{document}
+
+\begin{algorithm}
+\caption{Выбор следующего слова}\label{alg:next}
+\begin{algorithmic}[1]
+\Require фраза $W=(w_1,\dots,w_n)$, таблица векторов слов $\mathrm{EMB}$, выходная матрица $W_{\mathrm{out}}$ для $V$ слов словаря, температура $T$, порог $p$
+\Ensure следующее слово
+\Function{NextWord}{$W, T, p$}
+    \For{$i \gets 1$ \textbf{до} $n$} \Comment{шаг 1: embedding}
+        \State $x_i \gets \mathrm{EMB}[w_i]$
+    \EndFor
+    \State $q \gets x_n$;\quad $d \gets$ длина вектора $q$ \Comment{шаг 2: attention}
+    \For{$i \gets 1$ \textbf{до} $n$}
+        \State $s_i \gets \dfrac{q \cdot x_i}{\sqrt{d}}$
+    \EndFor
+    \State $a \gets \Call{Softmax}{s,\,1}$ \Comment{доли внимания, сумма равна 1}
+    \State $h \gets \sum_{i=1}^{n} a_i\, x_i$ \Comment{вектор контекста}
+    \For{$j \gets 1$ \textbf{до} $V$} \Comment{шаг 3: логиты}
+        \State $z_j \gets h \cdot W_{\mathrm{out}}[j]$
+    \EndFor
+    \State $P \gets \Call{Softmax}{z,\,T}$ \Comment{шаг 4: вероятности}
+    \State $P' \gets \Call{TopP}{P,\,p}$ \Comment{шаг 5: фильтр}
+    \State \Return случайное слово из $P'$ \Comment{шаг 6: выбор}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Softmax с температурой}\label{alg:softmax}
+\begin{algorithmic}[1]
+\Require вектор баллов $z=(z_1,\dots,z_V)$, температура $T>0$
+\Ensure вероятности $P=(P_1,\dots,P_V)$ с суммой 1
+\Function{Softmax}{$z, T$}
+    \ForAll{$j$}
+        \State $e_j \gets \exp(z_j / T)$
+    \EndFor
+    \State $S \gets \sum_j e_j$
+    \ForAll{$j$}
+        \State $P_j \gets e_j / S$
+    \EndFor
+    \State \Return $P$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Top-p фильтрация}\label{alg:topp}
+\begin{algorithmic}[1]
+\Require вероятности $P$, порог $p\in(0,1]$
+\Ensure распределение $P'$ на минимальном наборе слов с суммой $\ge p$
+\Function{TopP}{$P, p$}
+    \State $R \gets$ слова, отсортированные по $P$ по убыванию \Comment{$O(V\log V)$}
+    \State $K \gets \varnothing$;\quad $c \gets 0$
+    \ForAll{$w \in R$}
+        \State $K \gets K \cup \{w\}$
+        \State $c \gets c + P[w]$ \Comment{накопленная вероятность}
+        \If{$c \ge p$}
+            \State \textbf{прервать цикл}
+        \EndIf
+    \EndFor
+    \State $S \gets \sum_{w\in K} P[w]$
+    \ForAll{$w \in K$}
+        \State $P'[w] \gets P[w] / S$
+    \EndFor
+    \State \Return $P'$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Генерация подписи}\label{alg:gen}
+\begin{algorithmic}[1]
+\Require начальная фраза $W$, температура $T$, порог $p$, максимальная длина $L$
+\Ensure фраза $W$, дополненная сгенерированными словами
+\Function{Generate}{$W, T, p, L$}
+    \For{$t \gets 1$ \textbf{до} $L$}
+        \State $w \gets \Call{NextWord}{W, T, p}$
+        \If{$w = \langle\text{конец}\rangle$}
+            \State \textbf{прервать цикл}
+        \EndIf
+        \State добавить $w$ в конец $W$
+    \EndFor
+    \State \Return $W$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
