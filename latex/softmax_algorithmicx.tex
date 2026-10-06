@@ -1,0 +1,62 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Русские ключевые слова
+\algrenewcommand\algorithmicrequire{\textbf{Вход:}}
+\algrenewcommand\algorithmicensure{\textbf{Выход:}}
+\algrenewcommand\algorithmicforall{\textbf{для каждого}}
+\algrenewcommand\algorithmicdo{\textbf{выполнить}}
+\algrenewcommand\algorithmicreturn{\textbf{вернуть}}
+\algrenewtext{EndFor}{\textbf{конец цикла}}
+\algrenewtext{Function}[2]{\textbf{функция} \textsc{#1}(#2)}
+\algrenewtext{EndFunction}{\textbf{конец функции}}
+\floatname{algorithm}{Алгоритм}
+
+\begin{document}
+
+\begin{algorithm}
+\caption{Softmax с температурой}\label{alg:softmax}
+\begin{algorithmic}[1]
+\Require вектор баллов $z=(z_1,\dots,z_V)$, температура $T>0$
+\Ensure вероятности $P=(P_1,\dots,P_V)$, $P_j>0$, $\sum_j P_j = 1$
+\Function{Softmax}{$z, T$}
+    \ForAll{$j$}
+        \State $e_j \gets \exp(z_j / T)$ \Comment{делаем балл положительным}
+    \EndFor
+    \State $S \gets \sum_j e_j$ \Comment{общая сумма}
+    \ForAll{$j$}
+        \State $P_j \gets e_j / S$ \Comment{доля слова}
+    \EndFor
+    \State \Return $P$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Softmax с вычитанием максимума (устойчивая версия)}\label{alg:softmax-stable}
+\begin{algorithmic}[1]
+\Require вектор баллов $z=(z_1,\dots,z_V)$, температура $T>0$
+\Ensure вероятности $P=(P_1,\dots,P_V)$, $\sum_j P_j = 1$
+\Function{StableSoftmax}{$z, T$}
+    \ForAll{$j$}
+        \State $u_j \gets z_j / T$ \Comment{учитываем температуру}
+    \EndFor
+    \State $m \gets \max_j u_j$ \Comment{самый большой балл}
+    \ForAll{$j$}
+        \State $e_j \gets \exp(u_j - m)$ \Comment{степень $\le 0$, переполнения нет}
+    \EndFor
+    \State $S \gets \sum_j e_j$
+    \ForAll{$j$}
+        \State $P_j \gets e_j / S$
+    \EndFor
+    \State \Return $P$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
